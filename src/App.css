@@ -92,7 +92,11 @@ input::placeholder {
 .btn-danger:hover {
   background-color: #c0392b;
 }
-
+.error-text {
+  color: #d9534f;
+  font-size: 15px;
+  margin-top: 5px;
+}
 
 @keyframes logo-spin {
   from {
