@@ -1,11 +1,14 @@
-import React, { useState } from 'react'
+import  { useState } from 'react'
 import { useForm, type SubmitHandler } from 'react-hook-form'
+import { useValidators } from '../hooks/useValidators';
+import '../assets/style.css';
+
 type FormData = {
     location: string;
     roles: string;
     name: string;
     phone: string;
-    certification: string
+    certification: FileList
 
 }
 export default function MultiStepForm() {
@@ -13,11 +16,12 @@ export default function MultiStepForm() {
     const [step, setStep] = useState(1);
     const [complete, setComplete] = useState<{ [key: number]: boolean }>({});
     const { register, handleSubmit, getValues, trigger, formState: { errors } } = useForm<FormData>();
+    const { isOnlyLetters, isValidPhone, isValidFile } = useValidators();
 
     const onSubmit: SubmitHandler<FormData> = (data) => {
         console.log(data);
-        setComplete(prev => ({ ...prev, [3]: true })); 
-        setStep(4); 
+        setComplete(prev => ({ ...prev, [3]: true }));
+        setStep(4);
     }
     const nextStep = async (s: number) => {
 
@@ -30,12 +34,13 @@ export default function MultiStepForm() {
             valid = await trigger("roles");
             console.log("validation step2:", valid);
         }
-        /*else if (s === 3) {
-            const isNameValid = await trigger("name");
-            const isPhoneValid = await trigger("phone");
-            valid = isNameValid && isPhoneValid;
+        else if (s === 3) {
+            // const isNameValid = await trigger("name");
+            //  const isPhoneValid = await trigger("phone");
+            //  valid = isNameValid && isPhoneValid;
+            valid = await trigger(["name", "phone", "certification"]);
             console.log("validation step3:", valid);
-        }*/
+        }
         if (valid) {
             setComplete(prev => ({ ...prev, [s]: true }));
             //setStep((prev) => prev + 1);
@@ -49,14 +54,14 @@ export default function MultiStepForm() {
         //console.log(values);  
     }
     const prevStep = (s: number) => {
-        setComplete(prev => ({ ...prev, [s]: false })); 
+        setComplete(prev => ({ ...prev, [s]: false }));
         setStep(s - 1);
-        console.log(complete);
+        //  console.log(complete);
     }
 
 
     return (
-        <div className='container0'>
+        <div className='container'>
 
 
             <form onSubmit={handleSubmit(onSubmit)}>
@@ -107,7 +112,11 @@ export default function MultiStepForm() {
                         <input
                             type="text"
                             placeholder='City,Area...'
-                            {...register("location", { required: "Location Is Required!" })}
+                            {...register("location", {
+                                required: "Location Is Required!",
+                                validate: isOnlyLetters()
+                            })}
+
                         />
                         {errors.location && <p className="error-text">{errors.location.message}</p>}
                         <button type='button' className="btn btn-primary" onClick={() => nextStep(1)}>Next Step</button>
@@ -115,10 +124,18 @@ export default function MultiStepForm() {
                 )}
                 {step === 2 && (
                     <div>
+                         <div className="summary-box">
+                        <ul>
+                            <li><strong>Location:</strong> {getValues("location")}<i className="fas fa-check-circle check-icon"></i></li>
+                        </ul>
+                        </div>
                         <input
                             type="text"
                             placeholder='Job title,Position...'
-                            {...register("roles", { required: "Roles Is Required!" })}
+                            {...register("roles", {
+                                required: "Roles Is Required!",
+                                validate: isOnlyLetters()
+                            })}
                         />
                         {errors.roles && <p className="error-text">{errors.roles.message}</p>}
                         <button type='button' className="btn btn-primary" onClick={() => nextStep(2)}>Next Step</button>
@@ -127,33 +144,74 @@ export default function MultiStepForm() {
                     </div>
                 )}
                 {step === 3 && (
+
                     <div>
+                          <div className="summary-box">
+                        <ul>
+                            <li><strong>Location:</strong> {getValues("location")}<i className="fas fa-check-circle check-icon"></i></li>
+                            <li><strong>Role:</strong> {getValues("roles")}<i className="fas fa-check-circle check-icon"></i></li>
+                        </ul>
+                        </div>
                         <input
                             type="text"
                             placeholder='Name...'
-                            {...register("name", { required: "Name Is Required!" })}
+                            {...register("name", {
+                                required: "Name Is Required!",
+                                validate: isOnlyLetters()
+                            })}
                         />
                         {errors.name && <p className="error-text">{errors.name.message}</p>}
                         <input
                             type="text"
                             placeholder='Phone...'
-                            {...register("phone", { required: "Phone Is Required!" })}
+                            {...register("phone", {
+                                required: "Phone Is Required!",
+                                validate: isValidPhone()
+                            })}
+
                         />
                         {errors.phone && <p className="error-text">{errors.phone.message}</p>}
-                        <input
-                            type="text"
-                            placeholder='Certification...'
-                            {...register("certification", { required: "Certification Is Required!" })}
-                        />
+                        <label htmlFor="certification" className="dropzone">
+                            <p><i className="fas fa-upload" style={{ fontSize: '24px', color: '#3498db' }}></i></p>
+                            <p>Drag & Drop your file here or click to upload</p>
+
+                            <input
+                                type="file"
+                                className="file-input"
+                                id="certification"
+                                accept=".pdf,.jpg,.png,.jpeg"
+                                placeholder='Certification...'
+                                {...register("certification", {
+                                    required: "Certification Is Required!",
+                                    validate: isValidFile(2, ["application/pdf", "image/jpeg", "image/png"])
+                                })}
+                            />
+                        </label>
                         {errors.certification && <p className="error-text">{errors.certification.message}</p>}
 
                         <button type='button' className="btn btn-primary" onClick={() => prevStep(3)}>Prev Step</button>
 
-                        <button type='submit' className="btn btn-danger" >Send</button>
+                        <button type='button' className="btn btn-danger" onClick={() => nextStep(3)} >Send</button>
                     </div>
                 )}
                 {step === 4 && (
-                    <div>Success!!</div>
+                    <div className="success-message">
+                        <i className="fas fa-check-circle success-icon"></i>
+                        <h2>Success!</h2>
+                        <p>We've Recieved Your Application.</p>
+                        <div className="summary-box">
+                            <h3>Submitted Information</h3>
+                            <ul>
+                                <li><strong>Location:</strong> {getValues("location")}<i className="fas fa-check-circle check-icon"></i></li>
+                                <li><strong>Role:</strong> {getValues("roles")}<i className="fas fa-check-circle check-icon"></i></li>
+                                <li><strong>Name:</strong> {getValues("name")}<i className="fas fa-check-circle check-icon"></i></li>
+                                <li><strong>Phone:</strong> {getValues("phone")}<i className="fas fa-check-circle check-icon"></i></li>
+                                <li><strong>Certification:</strong> {getValues("certification")?.[0]?.name}<i className="fas fa-check-circle check-icon"></i></li>
+                            </ul>
+                        </div>
+                    </div>
+
+
                 )}
             </form>
         </div>
